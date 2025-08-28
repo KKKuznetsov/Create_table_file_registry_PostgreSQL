@@ -1,24 +1,26 @@
+-- 1) Схема
 CREATE SCHEMA IF NOT EXISTS ops;
 
+-- 2) Таблица реестра файлов (времена в TIMESTAMPTZ)
 CREATE TABLE IF NOT EXISTS ops.file_registry (
     id              BIGSERIAL PRIMARY KEY,
     file_path       TEXT NOT NULL,
-    uploaded_at     TIMESTAMP NOT NULL,
+    uploaded_at     TIMESTAMPTZ NOT NULL,                         
     status          TEXT NOT NULL CHECK (status IN ('NEW','PROCESSING','ERROR','CREATED','DELETE')),
     data_provider   TEXT NOT NULL CHECK (data_provider IN ('Сеть','Дистрибьютор')),
     report_year     SMALLINT NOT NULL CHECK (report_year >= 2000),
     report_month    SMALLINT NOT NULL CHECK (report_month BETWEEN 1 AND 12),
     client_name     TEXT NOT NULL,
     report_type     TEXT NOT NULL,
-    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     error_reason    TEXT
 );
 
--- Антидубли
+-- 3) Антидубли
 CREATE UNIQUE INDEX IF NOT EXISTS uq_file_registry_file_path
   ON ops.file_registry(file_path);
 
--- Полезные индексы
+-- 4) Полезные индексы
 CREATE INDEX IF NOT EXISTS idx_file_registry_status
   ON ops.file_registry(status);
 
@@ -34,8 +36,6 @@ CREATE INDEX IF NOT EXISTS idx_file_registry_period
 CREATE INDEX IF NOT EXISTS idx_file_registry_client
   ON ops.file_registry(client_name);
 
--- (Опционально) ускорение самых частых выборок «свежих NEW»
+-- 5) Частичный индекс под «свежие NEW»
 CREATE INDEX IF NOT EXISTS idx_file_registry_new_uploaded
   ON ops.file_registry(uploaded_at) WHERE status = 'NEW';
-
-
